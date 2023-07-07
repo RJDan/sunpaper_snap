@@ -1,0 +1,84 @@
+name: rjd-sunpaper # you probably want to 'snapcraft register <name>'
+title: Sunpaper
+version: '2.0' # just for humans, typically '1.2+git' or '1.3.2'
+summary: Linux dynamic wallpaper changer. # 79 char long summary
+description: |
+  Linux utility to change wallpaper based on local sunrise/sunset times
+  The description above refers to the software: https://github.com/hexive/sunpaper.git
+  * I have packaged the software as a snap for **personal use** but I have made the snap available for free.
+  * I do not maintain the software itself. I only maintain the snap. Please report software bugs to the maintainers.
+  * Report snap-specific bugs to me.
+  * I _DO NOT YET_ use this snap. It _has been tested SUPERFICIALITY on my system.
+  * Packaging 'style' : git build for Linux machines.
+  * License refers to the original software, not the snapcraft 'code'.
+website: https://github.com/RJDan/sunpaper_snap
+
+grade: stable # must be 'stable' to release into candidate/stable channels
+confinement: strict # use 'strict' once you have the right plugs and slots
+base: core22 # the base snap is the execution environment for this snap
+#license: APACHE-2
+
+# Comments:
+#files in the .config file need to be symlinked to the snap home dir
+# The observe plugs need to be manually connected
+
+apps:
+    sunpaper:
+        command: usr/bin/sunpaper.sh
+#        extensions: [gnome]
+        plugs:
+            - home
+            - gsettings
+            - x11
+            - wayland
+            # - opengl
+            - desktop
+            - desktop-legacy
+            - unity7
+            - unity8
+
+  # This is one of four snippets that relate to providing the userspace graphics needed by your application.
+  # i just copied this from another snap, I dont know if it is necessary, it doesnt seem to do anything
+  # Other, generally useful environment settings...
+environment:
+        CONFIG_FILE: $SNAP_USER_COMMON/.config/sunpaper/config # home inside the snap
+        wallpaperPath: $SNAP_USER_COMMON/sunpaper # home inside the snap
+        cachePath: $SNAP_USER_COMMON/.cache # home inside the snap
+
+# The `layout` ensures that files can be found by applications where they are expected by the toolkit or application.
+layout:
+# wallpaper folder outside the snap
+  /usr/share/wallpapers:
+    bind: $SNAP/usr/share/wallpapers
+  /usr/share/backgrounds:
+    bind: $SNAP/usr/share/backgrounds
+
+parts:
+    sunpaper:
+        source: https://github.com/hexive/sunpaper.git
+        source-type: git
+        source-tag: "v2.0"
+        plugin: dump
+        stage-snaps:
+          - rjd-wallutils/latest/edge
+          - rjd-sunwait/latest/edge
+        # filesets:
+        #     sunpaper.resource:
+        #         - LICENSE
+        #         - README.md
+        #         - images
+        # override-build: |
+        #     # edits to the script
+        #     sed -i -e "s:\$HOME:\$HOME/snap/rjd-sunpaper/common:g" ${CRAFT_PART_INSTALL}/usr/bin/sunpaper.sh
+# IN THE FORM OF <File in part>:  <File in stage>
+        organize:
+            "images" : $SNAP_USER_COMMON/sunpaper/images
+            "sunpaper.config" : $SNAP_USER_COMMON/.config/sunpaper/config/sunpaper.config
+            "sunpaper.sh" : usr/bin/sunpaper.sh
+        stage:
+                - usr/bin
+#                - $sunpaper.resource
+        prime:
+                - usr/bin
+#                - $sunpaper.resource
+
