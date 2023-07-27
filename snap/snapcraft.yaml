@@ -11,6 +11,8 @@ description: |
   * I _DO NOT YET_ use this snap. It _has been tested SUPERFICIALITY on my system.
   * Packaging 'style' : git build for Linux machines.
   * License refers to the original software, not the snapcraft 'code'.
+  * More info:
+  * Run the following to rename the snap to <command> ```sudo snap alias rjd-<snapname>.<command> <command>```
 website: https://github.com/RJDan/sunpaper_snap
 
 grade: stable # must be 'stable' to release into candidate/stable channels
@@ -31,11 +33,11 @@ apps:
             - gsettings
             - x11
             - wayland
-            # - opengl
+             - opengl
             - desktop
             - desktop-legacy
-            - unity7
-            - unity8
+#            - unity7
+#            - unity8
 
   # This is one of four snippets that relate to providing the userspace graphics needed by your application.
   # i just copied this from another snap, I dont know if it is necessary, it doesnt seem to do anything
