@@ -23,7 +23,7 @@ base: core22 # the base snap is the execution environment for this snap
 # Comments:
 #files in the .config file need to be symlinked to the snap home dir
 # The observe plugs need to be manually connected
-
+# CURRENT ERROR: setwallpaper: error while loading shared libraries: libwayland-client.so.0: cannot open shared object file: No such file or directory
 apps:
     sunpaper:
         command: usr/bin/sunpaper.sh
@@ -33,27 +33,54 @@ apps:
             - gsettings
             - x11
             - wayland
-             - opengl
+            - opengl
             - desktop
             - desktop-legacy
-#            - unity7
+            - unity7
+            - hardware-observe #manually connected
 #            - unity8
+
+plugs:
+   graphics-core22:
+      interface: content
+      target: $SNAP/graphics
+      default-provider: mesa-core22
+
 
   # This is one of four snippets that relate to providing the userspace graphics needed by your application.
   # i just copied this from another snap, I dont know if it is necessary, it doesnt seem to do anything
   # Other, generally useful environment settings...
 environment:
-        CONFIG_FILE: $SNAP_USER_COMMON/.config/sunpaper/config # home inside the snap
-        wallpaperPath: $SNAP_USER_COMMON/sunpaper # home inside the snap
-        cachePath: $SNAP_USER_COMMON/.cache # home inside the snap
+        HOME: $SNAP_USER_COMMON # remapping home inside the snap
+        CONFIG_FILE: $SNAP_USER_COMMON/config/sunpaper.config # NOT home inside the snap
+        wallpaperPath: $SNAP_USER_COMMON  #NOT  home inside the snap
+        cachePath: $SNAP_USER_COMMON/.cache # NOT home inside the snap
 
 # The `layout` ensures that files can be found by applications where they are expected by the toolkit or application.
 layout:
+  /usr/share/drirc.d:  # Used by mesa-core22 for app specific workarounds
+    symlink: $SNAP/graphics/drirc.d
+  /usr/share/libdrm:  # Needed by mesa-core20 on AMD GPUs
+    bind: $SNAP/graphics/libdrm
 # wallpaper folder outside the snap
   /usr/share/wallpapers:
     bind: $SNAP/usr/share/wallpapers
   /usr/share/backgrounds:
     bind: $SNAP/usr/share/backgrounds
+  /etc/xdg/waybar: 
+    bind: $SNAP/etc/xdg/waybar
+  /etc/xdg/xdg-ubuntusway: 
+    bind: $SNAP/etc/xdg/xdg-ubuntusway
+# things blindly copied from the canonical on-screen keyboard
+  /usr/share/mime:
+    symlink: $SNAP/usr/share/mime
+  /usr/share/xml: # this copies over an existing dir... so removed
+    symlink: $SNAP/usr/share/xml
+  /usr/share/glib-2.0:
+    bind: $SNAP/usr/share/glib-2.0
+  /usr/lib/$CRAFT_ARCH_TRIPLET/gdk-pixbuf-2.0:
+    symlink: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/gdk-pixbuf-2.0
+
 
 parts:
     sunpaper:
@@ -69,18 +96,57 @@ parts:
         #         - LICENSE
         #         - README.md
         #         - images
-        # override-build: |
-        #     # edits to the script
-        #     sed -i -e "s:\$HOME:\$HOME/snap/rjd-sunpaper/common:g" ${CRAFT_PART_INSTALL}/usr/bin/sunpaper.sh
-# IN THE FORM OF <File in part>:  <File in stage>
+        override-build: |
+             # edits to the script
+             echo '#! /bin/bash' > sunpaper.sh_mod
+             echo 'mkdir -p ${SNAP_USER_COMMON}/.cache ' >> sunpaper.sh_mod
+             sed -e 's:/.config/sunpaper/config:/config:g' -e 's:HOME/sunpaper/:SNAP_USER_COMMON/:g' -e "s:HOME:{SNAP_USER_COMMON}:g" sunpaper.sh >> sunpaper.sh_mod             
+             
+             # Edit to the config file
+             echo '# There are a few things to note  about the snap package installation. Firstly, the HOME dir now maps to the SNAP_USER_COMMON dir which is /home/username/snap/rjd-sunpaper/common/. Your config file (this file) should go there.' > sunpaper.config_mod             
+             
+             # Pull config content from sh file
+             head -n 193 sunpaper.sh | sed -e 's:/.config/sunpaper/config:/config:g'  -e 's:HOME/sunpaper/:SNAP_USER_COMMON/:g' - >> sunpaper.config_mod
+             rm sunpaper.sh
+             
+             mv "${SNAPCRAFT_PART_BUILD}/sunpaper.sh_mod" ${SNAPCRAFT_PART_INSTALL}/sunpaper.sh
+             
+             chmod +x ${SNAPCRAFT_PART_INSTALL}/sunpaper.sh
+             mv "${SNAPCRAFT_PART_BUILD}/sunpaper.config_mod" "${SNAPCRAFT_PART_INSTALL}/sunpaper.config" 
+             
+             craftctl default
+# IN THE     FORM OF <File in part>:  <File in stage>
         organize:
-            "images" : $SNAP_USER_COMMON/sunpaper/images
-            "sunpaper.config" : $SNAP_USER_COMMON/.config/sunpaper/config/sunpaper.config
+#            "images" : images # SNAP_USER_COMMON = /home/username/snap/sunpaper/common/
+            "sunpaper.config" : config/sunpaper.config
             "sunpaper.sh" : usr/bin/sunpaper.sh
         stage:
-                - usr/bin
+            - LICENSE 
+            - README.md 
+            - config 
+            - etc 
+            - images 
+            - lib 
+            - meta.rjd-sunwait
+            - meta.rjd-wallutils 
+            - screenshots 
+            - snap.rjd-sunwait 
+            - snap.rjd-wallutils 
+            - usr
 #                - $sunpaper.resource
         prime:
-                - usr/bin
+            - LICENSE 
+            - README.md 
+            - config 
+            - etc 
+            - images 
+            - lib 
+            - meta.rjd-sunwait
+            - meta.rjd-wallutils 
+            - screenshots 
+            - snap.rjd-sunwait 
+            - snap.rjd-wallutils 
+            - usr
 #                - $sunpaper.resource
+
 
